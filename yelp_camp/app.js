@@ -1,35 +1,15 @@
-var express = require("express");
-var app = express();
-var bodyParser = require("body-parser");
-var mongoose = require("mongoose");
-const { request, response } = require("express");
+var express      = require("express"),
+    app          = express(),
+    bodyParser   = require("body-parser"),
+    mongoose     = require("mongoose"),
+    Campground   = require("./models/campground"),
+    seedDB       = require("./seeds");
+
 
 mongoose.connect("mongodb://localhost:27017/yelp_camp", {useNewUrlParser: true});
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
-
-// SCHEMA SETUP
-var campgroundsSchema = new mongoose.Schema({
-    name: String,
-    image: String,
-    description: String
-});
-
-var Campground = mongoose.model("Campground", campgroundsSchema);
-
-// Campground.create(
-//     {
-//         name: "Hidden Forest",
-//         image: "https://images.unsplash.com/photo-1537565266759-34bbc16be345?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-//         description: "Lovely place for camping with magnificent views"
-//     }, (err, campground) => {
-//         if(err){
-//             console.log(err);
-//         } else {
-//             console.log("Newly Created Campground");
-//             console.log(campground)
-//         }
-//     });
+seedDB();
 
 app.get('/', function(request, response){
     response.render("landing");
@@ -66,11 +46,11 @@ app.get('/campgrounds/new', function(request, response){
 });
 
 app.get("/campgrounds/:id", (request, response) => {
-    Campground.findById(request.params.id, (err, foundCampground) => {
+    Campground.findById(request.params.id).populate("comments").exec((err, foundCampground) => {
         if(err){
             console.log(err);
         } else {
-            response.render("show", {campgrounds: foundCampground});
+            response.render("show", {campground: foundCampground});
         }
     });
 });
