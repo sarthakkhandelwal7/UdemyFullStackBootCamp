@@ -1,90 +1,44 @@
-var express      = require("express"),
-    app          = express(),
-    bodyParser   = require("body-parser"),
-    mongoose     = require("mongoose"),
-    Campground   = require("./models/campground"),
-    Comment      = require("./models/comment"),
-    seedDB       = require("./seeds");
+var express        = require("express"),
+    app            = express(),
+    bodyParser     = require("body-parser"),
+    mongoose       = require("mongoose"),
+    passport       = require("passport"),
+    LocalStrategy  = require("passport-local"),
+    Campground     = require("./models/campground"),
+    Comment        = require("./models/comment"),
+    User           = require("./models/user"),
+    seedDB         = require("./seeds");
+
+var commentRoutes       = require("./routes/comments"),
+    campgroundRoutes    = require("./routes/campgrounds"),
+    indexRoutes          = require("./routes/index");
 
 mongoose.connect("mongodb://localhost:27017/yelp_camp", {useNewUrlParser: true});
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"))
-seedDB();
+// seedDB();
 
-app.get('/', function(request, response){
-    response.render("landing");
+app.use(require("express-session")({
+    secret: "Kesenai yume mo tomarenai ima mo Dareka no tame ni tsuyoku nareru nara Nando demo tachiagare",
+    resave: false,
+    saveUninitialized: false
+}))
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+app.use(function(request, response, next){
+    response.locals.currentUser = request.user;
+    next();
 });
 
-app.get('/campgrounds', function(request, response){
-    Campground.find({}, (err, campgrounds) => {
-        if(err){
-            console.log(err);
-        } else {
-            response.render("campgrounds/index", {campgrounds:campgrounds});
-        }
-    });
-    
-});
+app.use("/", indexRoutes);
+app.use("/campgrounds", campgroundRoutes);
+app.use("/campgrounds/:id/comments", commentRoutes);
 
-app.post("/campgrounds", (request, response) => {
-    var name = request.body.name;
-    var image = request.body.image;
-    var desc = request.body.description;
-    var newCampground = {name: name, image:image, description: desc}
-
-    Campground.create(newCampground, (err, newlyCreated) => {
-        if(err){
-            console.log(err);
-        } else {
-            response.redirect("/campgrounds");
-        }
-    });
-});
-
-app.get('/campgrounds/new', function(request, response){
-    response.render("campgrounds/new");
-});
-
-app.get("/campgrounds/:id", (request, response) => {
-    Campground.findById(request.params.id).populate("comments").exec((err, foundCampground) => {
-        if(err){
-            console.log(err);
-        } else {
-            response.render("campgrounds/show", {campground: foundCampground});
-        }
-    });
-});
-
-app.get("/campgrounds/:id/comments/new", function(request, response){
-    Campground.findById(request.params.id, function(err, campground){
-        if(err){
-            console.log(err);
-        } else {
-            response.render("comments/new", {campground: campground});
-        }
-    });
-});
-
-app.post("/campgrounds/:id/comments", function(request, response){
-    Campground.findById(request.params.id, function(err, campground){
-        if(err){
-            console.log(err);
-            response.redirect("/campground"+request.param.id);
-        } else {
-            Comment.create(request.body.comment, function(err, comment){
-                if(err){
-                    console.log(err);
-
-                } else {
-                    campground.comments.push(comment);
-                    campground.save();
-                    response.redirect("/campgrounds/"+campground._id);
-                }
-            });
-        }
-    });
-});
 var port = 3001
 var ip = "127.0.0.1"
 app.listen(port, ip, function(){
