@@ -6,18 +6,21 @@ middlewareObj = {}
 middlewareObj.checkCampgroundOwnership = function(request, response, next) {
     if(request.isAuthenticated()){
         Campground.findById(request.params.id, function(err, foundCampground){
-            if(err){
+            if(err || !foundCampground){
+                request.flash("error", "Campground not found");
                 response.redirect("back");
             } else {
                 if(foundCampground.author.id.equals(request.user._id)){
                     next();
                 } else {
-                    response.send("you are not authorized");
+                    request.flash("error", "You donot have the permission to do that");
+                    response.redirect("back");
                 }
             }
         });
     } else {
-        response.send("You are not logged in");
+        request.flash("error", "You need to be legged in to do that");
+        response.redirect("back");
     }
 }
 
@@ -30,12 +33,14 @@ middlewareObj.checkCommentOwnership = function(request, response, next){
                 if(foundComment.author.id.equals(request.user._id)){
                     next();
                 } else {
-                    response.send("you are not authorized");
+                    request.flash("error", "You don't have the permission to do that");
+                    response.redirect("back");
                 }
             }
         });
     } else {
-        response.send("You are not logged in");
+        request.flash("error", "You need to be legged in to do that");
+        response.redirect("back");
     }
 }
 
@@ -43,6 +48,7 @@ middlewareObj.isLoggedIn = function(request, response, next){
     if(request.isAuthenticated()){
         return next();
     }
+    request.flash("error", "You need to be logged in to do that");
     response.redirect("/login");
 }
 

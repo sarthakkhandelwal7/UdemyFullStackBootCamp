@@ -17,13 +17,14 @@ router.get('/', function(request, response){
 
 router.post("/", middlewareObj.isLoggedIn, (request, response) => {
     var name = request.body.name;
+    var price = request.body.price;
     var image = request.body.image;
     var desc = request.body.description;
     var author = {
         id: request.user._id,
         username: request.user.username
     }
-    var newCampground = {name: name, image:image, description: desc, author: author}
+    var newCampground = {name: name, price:price, image:image, description: desc, author: author}
 
     Campground.create(newCampground, (err, newlyCreated) => {
         if(err){
@@ -40,8 +41,9 @@ router.get('/new', middlewareObj.isLoggedIn, function(request, response){
 
 router.get("/:id", (request, response) => {
     Campground.findById(request.params.id).populate("comments").exec((err, foundCampground) => {
-        if(err){
-            console.log(err);
+        if(err || !foundCampground){
+            request.flash("error", "Campground not found");
+            response.redirect("back");
         } else {
             response.render("campgrounds/show", {campground: foundCampground});
         }

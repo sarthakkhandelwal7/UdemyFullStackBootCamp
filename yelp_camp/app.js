@@ -3,6 +3,7 @@ var express        = require("express"),
     bodyParser     = require("body-parser"),
     mongoose       = require("mongoose"),
     passport       = require("passport"),
+    flash          = require("connect-flash"),
     LocalStrategy  = require("passport-local"),
     methodOverride = require("method-override"),
     Campground     = require("./models/campground"),
@@ -19,7 +20,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
-// seedDB();
+app.use(flash());
 
 app.use(require("express-session")({
     secret: "Kesenai yume mo tomarenai ima mo Dareka no tame ni tsuyoku nareru nara Nando demo tachiagare",
@@ -35,6 +36,8 @@ passport.deserializeUser(User.deserializeUser());
 
 app.use(function(request, response, next){
     response.locals.currentUser = request.user;
+    response.locals.error = request.flash("error");
+    response.locals.success = request.flash("success");
     next();
 });
 

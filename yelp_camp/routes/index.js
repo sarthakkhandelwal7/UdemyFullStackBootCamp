@@ -17,16 +17,18 @@ router.post("/register", function(request, response){
     var newUser = new User({username: request.body.username});
     User.register(newUser, request.body.password, function(err, user){
         if(err){
-            console.log(err);
+            request.flash("error", err.message);
             return response.render("register");
         }
     //  |  This is like a function   |
         passport.authenticate("local")(request, response, function(){
+            request.flash("success", "Welcome to YelpCamp " + user.username);
             response.redirect("/campgrounds");
         });
     });
 });
 
+//show login form
 router.get("/login", function(request, response){
     response.render('login');
 });
@@ -42,6 +44,7 @@ function(request, response){
 
 router.get("/logout", function(request, response){
     request.logout();
+    request.flash("success", "You are logged out");
     response.redirect("/campgrounds");
 });
 
